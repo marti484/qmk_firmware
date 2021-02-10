@@ -14,26 +14,77 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 
 
-uint32_t layer_state_set_user(uint32_t state) {
-    uint8_t current = rgblight_get_mode();
-    if(startMode == 0 && current == RGBLIGHT_MODE_STATIC_LIGHT){
-        startMode = rgblight_get_mode();
-    }
-    switch (biton32(state)) {
-    case L_DEFAULT:
-    rgblight_mode_noeeprom(startMode);
-        break;
-    case L_QUICK:
-        rgblight_mode_noeeprom(RGBLIGHT_MODE_BREATHING + 3);
-        break;
-    case L_KEYPAD:
-        rgblight_mode_noeeprom(RGBLIGHT_MODE_SNAKE + 2);
-        break;
-    case L_LIGHTS:
-        rgblight_mode_noeeprom(RGBLIGHT_MODE_ALTERNATING);
-        break;
-    default: //  for any other layers, or the default layer
-        break;
-    }
-  return state;
-};
+// uint32_t layer_state_set_user(uint32_t state) {
+//     uint8_t current = rgblight_get_mode();
+//     if(startMode == 0 && current == RGBLIGHT_MODE_STATIC_LIGHT){
+//         startMode = rgblight_get_mode();
+//     }
+//     switch (biton32(state)) {
+//     case L_DEFAULT:
+//     rgblight_mode_noeeprom(startMode);
+//         break;
+//     case L_QUICK:
+//         rgblight_mode_noeeprom(RGBLIGHT_MODE_BREATHING + 3);
+//         break;
+//     case L_KEYPAD:
+//         rgblight_mode_noeeprom(RGBLIGHT_MODE_SNAKE + 2);
+//         break;
+//     case L_LIGHTS:
+//         rgblight_mode_noeeprom(RGBLIGHT_MODE_ALTERNATING);
+//         break;
+//     default: //  for any other layers, or the default layer
+//         break;
+//     }
+//   return state;
+// };
+
+const rgblight_segment_t PROGMEM my_capslock_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    {0, 1, HSV_RED},       // Light 4 LEDs, starting with LED 6
+    {15,1, HSV_RED}
+);
+
+const rgblight_segment_t PROGMEM my_default_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    {11, 2, HSV_ORANGE}
+);
+// Light LEDs 11 & 12 in purple when keyboard layer 2 is active
+const rgblight_segment_t PROGMEM my_quick_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    {9, 1, HSV_PURPLE}
+);
+// Light LEDs 13 & 14 in green when keyboard layer 3 is active
+const rgblight_segment_t PROGMEM my_numpad_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    {4, 2, HSV_GREEN}
+);
+
+const rgblight_segment_t PROGMEM my_lights_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    {0, 2, HSV_MAGENTA}
+);
+const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
+    my_capslock_layer,
+    my_default_layer,    // Overrides caps lock layer
+    my_quick_layer,    // Overrides other layers
+    my_numpad_layer,
+    my_lights_layer     // Overrides other layers
+);
+
+void keyboard_post_init_user(void) {
+    // Enable the LED layers
+    rgblight_layers = my_rgb_layers;
+}
+
+bool led_update_user(led_t led_state) {
+    rgblight_set_layer_state(0, led_state.caps_lock);
+    return true;
+}
+
+layer_state_t default_layer_state_set_user(layer_state_t state) {
+    rgblight_set_layer_state(1, layer_state_cmp(state, L_DEFAULT));
+    return state;
+}
+
+layer_state_t layer_state_set_user(layer_state_t state) {
+    rgblight_set_layer_state(1, layer_state_cmp(state, L_DEFAULT));
+    rgblight_set_layer_state(2, layer_state_cmp(state, L_QUICK));
+    rgblight_set_layer_state(3, layer_state_cmp(state, L_KEYPAD));
+    rgblight_set_layer_state(4, layer_state_cmp(state, L_LIGHTS));
+    return state;
+}
